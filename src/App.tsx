@@ -45,8 +45,8 @@ export default function App() {
     whatsapp: "",
   });
 
-  const [uploadedImages, setUploadedImages] = useState<{ name: string; date: string }[]>([]);
-  const [uploadedVideos, setUploadedVideos] = useState<{ name: string; data: string }[]>([]);
+  const [uploadedImages, setUploadedImages] = useState<{ name: string }[]>([]);
+  const [uploadedVideos, setUploadedVideos] = useState<{ name: string }[]>([]);
 
   const [apiKey, setApiKey] = useState("");
   const [openAiKey, setOpenAiKey] = useState("");
@@ -70,25 +70,19 @@ export default function App() {
     if (!files) return;
 
     Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const dataUrl = reader.result as string;
-        if (type === 'image') {
-          setUploadedImages(prev => [...prev, { name: file.name, date: dataUrl }]);
-          // Auto-append to textarea for visibility
-          setFormData(prev => ({
-            ...prev,
-            images: prev.images ? `${prev.images}\nUploaded: ${file.name}` : `Uploaded: ${file.name}`
-          }));
-        } else {
-          setUploadedVideos(prev => [...prev, { name: file.name, data: dataUrl }]);
-          setFormData(prev => ({
-            ...prev,
-            videos: prev.videos ? `${prev.videos}\nUploaded: ${file.name}` : `Uploaded: ${file.name}`
-          }));
-        }
-      };
-      reader.readAsDataURL(file);
+      if (type === 'image') {
+        setUploadedImages(prev => [...prev, { name: file.name }]);
+        setFormData(prev => ({
+          ...prev,
+          images: prev.images ? `${prev.images}\nUploaded: ${file.name}` : `Uploaded: ${file.name}`
+        }));
+      } else {
+        setUploadedVideos(prev => [...prev, { name: file.name }]);
+        setFormData(prev => ({
+          ...prev,
+          videos: prev.videos ? `${prev.videos}\nUploaded: ${file.name}` : `Uploaded: ${file.name}`
+        }));
+      }
     });
   };
 
@@ -245,7 +239,8 @@ export default function App() {
     if (!websiteCode) return;
     const blob = new Blob([websiteCode], { type: "text/html" });
     const url = URL.createObjectURL(blob);
-    window.open(url, "_blank");
+    window.open(url, "_blank", "noopener,noreferrer");
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
   };
 
   return (
@@ -390,10 +385,12 @@ export default function App() {
                   <Input
                     id="apiKey"
                     type="password"
-                    label="Gemini API Key (Optional)"
+                    label="Gemini API Key *"
                     placeholder="AIzaSy..."
                     value={apiKey}
                     onChange={(e) => setApiKey(e.target.value)}
+                    autoComplete="off"
+                    required
                   />
                 ) : (
                   <Input
@@ -403,9 +400,14 @@ export default function App() {
                     placeholder="sk-..."
                     value={openAiKey}
                     onChange={(e) => setOpenAiKey(e.target.value)}
+                    autoComplete="off"
                     required
                   />
                 )}
+                <p className="text-xs leading-relaxed text-slate-500">
+                  Your key is sent only to the selected provider through this site's secure server.
+                  It is not saved in this browser or by the application.
+                </p>
 
                 <Select
                   id="language"
@@ -817,7 +819,8 @@ export default function App() {
                         srcDoc={websiteCode}
                         className="w-full h-full border-0"
                         title="Website Preview"
-                        sandbox="allow-scripts allow-same-origin"
+                        sandbox="allow-scripts"
+                        referrerPolicy="no-referrer"
                       />
                     </motion.div>
                   )}
